@@ -61,6 +61,9 @@ def random_search(env):
 
 env = gym.make('CartPole-v1', render_mode=render_mode)
 episode_lengths, params = random_search(env)
+
+np.savetxt('data/cartpole_weights.csv', params, delimiter=',')
+
 plt.plot(episode_lengths)
 plt.show()
 
