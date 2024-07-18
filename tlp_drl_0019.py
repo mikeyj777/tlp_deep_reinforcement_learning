@@ -1,4 +1,5 @@
 import gymnasium as gym
+from gymnasium.wrappers import TimeLimit
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -64,4 +65,9 @@ plt.plot(episode_lengths)
 plt.show()
 
 print('*** Final run with final weights***')
-play_multiple_episodes(env, 100, params)
+render_mode = 'human'
+env = gym.make('CartPole-v1', render_mode=render_mode)
+env = TimeLimit(env, max_episode_steps=1000)
+final_len = play_one_episode(env, params)
+print(f'final len: {final_len}')
+
