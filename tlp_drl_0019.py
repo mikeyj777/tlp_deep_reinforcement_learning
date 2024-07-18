@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+render_mode = None
+
 def get_action(s, w):
     # 0 - left; 1 - right
     act = 0
@@ -13,12 +15,13 @@ def get_action(s, w):
     return act
 
 def play_one_episode(env, params):
-    observation = env.reset()
+    observation = env.reset()[0]
     done = False
     t = 0
 
     while not done and t < 10000:
-        env.render()
+        if render_mode is not None:
+            env.render()
         t += 1
         action = get_action(observation, params)
         observation, reward, done, truncated, info = env.step(action)
@@ -32,9 +35,10 @@ def play_multiple_episodes(env, T, params):
     for _ in range(T):
         length = play_one_episode(env, params)
         episode_lengths.append(length)
+        # print(f'current episode length {length}')
     
-    ep_lens_df = pd.DataFrame(episode_lengths, columns = 'episode_length')
-    print(f'stats on episod lengths: {ep_lens_df.describe()}')
+    ep_lens_df = pd.DataFrame(episode_lengths, columns = ['episode_length'])
+    # print(f'stats on episod lengths: {ep_lens_df.describe()}')
     return ep_lens_df['episode_length'].mean()
 
 
@@ -53,7 +57,8 @@ def random_search(env):
     
     return episode_lengths, params
 
-env = gym.make('CartPole-v1', render_mode='human')
+
+env = gym.make('CartPole-v1', render_mode=render_mode)
 episode_lengths, params = random_search(env)
 plt.plot(episode_lengths)
 plt.show()
