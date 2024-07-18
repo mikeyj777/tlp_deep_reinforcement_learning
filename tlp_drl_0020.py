@@ -7,6 +7,8 @@ render_mode = 'rgb_array'
 def get_stored_params():
     params = np.genfromtxt('data/cartpole_weights.csv', delimiter=',')
 
+    return params
+
 def get_action(s, w):
     # 0 - left; 1 - right
     act = 0
@@ -22,8 +24,8 @@ def play_one_episode(env, params, render_mode = None):
     t = 0
 
     while not done and t < 10000:
-        if render_mode is not None:
-            env.render()
+        # if render_mode is not None:
+        #     env.render()
         t += 1
         action = get_action(observation, params)
         observation, reward, done, truncated, info = env.step(action)
