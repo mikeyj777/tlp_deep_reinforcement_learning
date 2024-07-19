@@ -65,7 +65,7 @@ a = np.zeros(action_space_size)
 q_table = np.broadcast_to(a, (num_state_buckets,) * state_space_size + a.shape).copy()
 
 # tunable parameters
-num_episodes = 10000
+num_episodes = 8000
 max_steps_per_episode = 200
 
 learning_rate = 0.1
@@ -132,10 +132,12 @@ while i < len(rewards_all_episodes) - 1 + reward_block_size:
     ave_rewards.append(rewards_all_episodes[i:i+reward_block_size].mean())
     i += reward_block_size
 
+plt.plot(ave_rewards)
+plt.show()
 
 # method from - https://stackoverflow.com/a/52145217/3825495.  reference for reading data.
 import csv
-fil_name = 'data/cartpole_q_table_modified_reward.csv'
+fil_name = f'data/cartpole_q_table_modified_reward_state_quantiles_{num_state_buckets}.csv'
 q_list = q_table.tolist()
 with open(fil_name, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
@@ -155,8 +157,5 @@ for row in q_list_loaded:
 
 q_table_loaded = np.array(nw_q_list_loaded, dtype=float)
 
-
-plt.plot(ave_rewards)
-plt.show()
 
 apple = 1
