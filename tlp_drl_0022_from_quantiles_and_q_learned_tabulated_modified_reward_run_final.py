@@ -5,9 +5,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import gymnasium as gym
 
+# stored q-table
+fil_name = 'data/cartpole_q_table_modified_reward_state_quantiles_10_episodes_20000.csv'
 
 render_mode = 'human'
 
+# stored game observations
 observations_df = pd.read_csv('data/cartpole_observations_from_random_params.csv')
 
 num_state_buckets = 10
@@ -51,9 +54,6 @@ env = gym.make('CartPole-v1', render_mode=render_mode)
 
 action_space_size = env.action_space.n
 state_space_size = env.observation_space.shape[0]
-
-
-fil_name = 'data/cartpole_q_table_modified_reward.csv'
 
 with open(fil_name, 'r') as f:
   reader = csv.reader(f)

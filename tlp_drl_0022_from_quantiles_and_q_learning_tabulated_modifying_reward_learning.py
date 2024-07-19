@@ -65,7 +65,7 @@ a = np.zeros(action_space_size)
 q_table = np.broadcast_to(a, (num_state_buckets,) * state_space_size + a.shape).copy()
 
 # tunable parameters
-num_episodes = 8000
+num_episodes = 20000
 max_steps_per_episode = 200
 
 learning_rate = 0.1
@@ -137,7 +137,7 @@ plt.show()
 
 # method from - https://stackoverflow.com/a/52145217/3825495.  reference for reading data.
 import csv
-fil_name = f'data/cartpole_q_table_modified_reward_state_quantiles_{num_state_buckets}.csv'
+fil_name = f'data/cartpole_q_table_modified_reward_state_quantiles_{num_state_buckets}_episodes_{num_episodes}.csv'
 q_list = q_table.tolist()
 with open(fil_name, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')

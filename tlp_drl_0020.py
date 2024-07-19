@@ -5,7 +5,7 @@ import numpy as np
 render_mode = 'rgb_array'
 
 def get_stored_params():
-    params = np.genfromtxt('data/cartpole_weights.csv', delimiter=',')
+    params = np.genfromtxt('data/cartpole_weights_random_search.csv', delimiter=',')
 
     return params
 
