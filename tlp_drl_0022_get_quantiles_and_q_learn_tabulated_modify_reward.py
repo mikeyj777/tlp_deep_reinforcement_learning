@@ -99,9 +99,9 @@ for episode in range(num_episodes):
 
         done = terminated or truncated
 
-
-        if reward > 0:
-            apple = 1
+        # reward = 0
+        if done:
+            reward = -300
 
         # update q-table
         
@@ -120,7 +120,43 @@ for episode in range(num_episodes):
 
     rewards_all_episodes.append(rewards_current_episode)
 
-    # print(f'***********\n\nepisode: {episode} | step: {step}\n\n**********')
-    # print(f'{q_table}\n**********\n\n')
+    if episode % 500 == 0:
+            print(f'***********\n\nepisode: {episode} | step: {step}\n\n**********')
+            # print(f'{q_table}\n**********\n\n')
 
-np.savetxt(fname='data/cartpole_q_table.csv', X=q_table, delimiter=',')
+rewards_all_episodes = np.array(rewards_all_episodes)
+reward_block_size = 100
+ave_rewards = []
+i = 0
+while i < len(rewards_all_episodes) - 1 + reward_block_size:
+    ave_rewards.append(rewards_all_episodes[i:i+reward_block_size].mean())
+    i += reward_block_size
+
+
+# method from - https://stackoverflow.com/a/52145217/3825495.  reference for reading data.
+import csv
+fil_name = 'data/cartpole_q_table_modified_reward.csv'
+q_list = q_table.tolist()
+with open(fil_name, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',')
+    writer.writerows(q_list)
+
+# test reading data
+with open(fil_name, 'r') as f:
+  reader = csv.reader(f)
+  q_list_loaded = list(reader)
+
+nw_q_list_loaded = []
+for row in q_list_loaded:
+    nwrow = []
+    for r in row:
+        nwrow.append(eval(r))
+    nw_q_list_loaded.append(nwrow)
+
+q_table_loaded = np.array(nw_q_list_loaded, dtype=float)
+
+
+plt.plot(ave_rewards)
+plt.show()
+
+apple = 1
