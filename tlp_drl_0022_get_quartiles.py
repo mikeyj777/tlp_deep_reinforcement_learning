@@ -9,7 +9,6 @@ render_mode = None
 
 observations_df = pd.read_csv('data/cartpole_observations_from_random_params.csv')
 
-
 num_state_buckets = 10
 n = num_state_buckets
 quantile_fractions = np.linspace(1/n,(n-1)/n, n-1, endpoint=True)
@@ -34,7 +33,7 @@ quantile_df = pd.DataFrame(quantile_list)
 
 quantile_df['quantile_fractions'] = quantile_fractions
 
-def get_state_classifications(state):
+def get_state_classifications_return_as_tuple(state):
     out_state = []
     for obs, state_obs in zip(observation_classes, state):
         quantiles_np = quantile_df[obs].values
@@ -45,15 +44,15 @@ def get_state_classifications(state):
             s_class += 1
         out_state.append(s_class)
     
-    return out_state
+    return tuple(out_state)
 
-env = gym.make('CartPole-v1')
+env = gym.make('CartPole-v1', render_mode=render_mode)
 
 action_space_size = env.action_space.n
-state_space_size = env.observation_space.n
+state_space_size = env.observation_space.shape[0]
 
-q_table = np.zeros((state_space_size, action_space_size))
-# print(q_table)
+a = np.zeros(action_space_size)
+q_table = np.broadcast_to(a, (num_state_buckets,) * state_space_size + a.shape)
 
 # tunable parameters
 num_episodes = 10000
@@ -72,16 +71,17 @@ rewards_all_episodes = []
 # Q-Learning Algo
 for episode in range(num_episodes):
     state = env.reset()[0]
-
+    state = get_state_classifications_return_as_tuple(state)
     done = False
     rewards_current_episode = 0
 
     for step in range(max_steps_per_episode):
-
+        if render_mode is not None:
+            env.render()
         #Exploration-Exploitation 
         exploration_rate_threshold = random.uniform(0, 1)
         if exploration_rate_threshold > exploration_rate:
-            action = np.argmax(q_table[state, :])
+            action = np.argmax(q_table[state])
         else:
             action = env.action_space.sample()
         
@@ -94,11 +94,13 @@ for episode in range(num_episodes):
             apple = 1
 
         # update q-table
-        state = get_state_classifications(state)
-        q_table[state, action] = q_table[state, action] * (1 - learning_rate) + \
-            learning_rate * (reward + discount_rate * np.max(q_table[new_state,:]))
         
-        state = new_state
+        target_location = state + (action,)
+        new_state_tuple = get_state_classifications_return_as_tuple(new_state)
+        q_table[target_location] = q_table[target_location] * (1 - learning_rate) + \
+            learning_rate * (reward + discount_rate * np.max(q_table[new_state_tuple]))
+        
+        state = new_state_tuple
         rewards_current_episode += reward
 
         if done:
