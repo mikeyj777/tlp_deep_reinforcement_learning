@@ -68,7 +68,7 @@ for row in q_list_loaded:
 
 q_table = np.array(nw_q_list_loaded, dtype=float)
 # tunable parameters
-max_steps_per_episode = 100
+max_steps_per_episode = 200
 
 
 # Q-Learning Algo
@@ -93,3 +93,4 @@ for step in range(max_steps_per_episode):
     if done:
         break
 
+apple = 1
