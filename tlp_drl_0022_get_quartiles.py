@@ -51,8 +51,18 @@ env = gym.make('CartPole-v1', render_mode=render_mode)
 action_space_size = env.action_space.n
 state_space_size = env.observation_space.shape[0]
 
+# 'a' is the array which will hold the reward of each action that is chosen.  this will be broadcast to each spot in the state space
+# the state space is comprised of the number of buckets across each dimension that is varied across all states.
+# in the case of cartpole, there are 4 varied objects:  cart velocity, cart position, pole angle and pole tip veloc.
+# the input data of state space is divided into buckets like a histogram, depending on where it falls.
+# if there are N buckets, then the state space would be (N, N, N, N).  so a 4-D array each of size N.
+# the q_table is of shape (N, N, N, N, action_space_size)
 a = np.zeros(action_space_size)
-q_table = np.broadcast_to(a, (num_state_buckets,) * state_space_size + a.shape)
+
+# the broadcasting is a trick to build the appropriate size array.  the copy is to assign the broadcast to memory.
+# without the copy, it is just a view.
+
+q_table = np.broadcast_to(a, (num_state_buckets,) * state_space_size + a.shape).copy()
 
 # tunable parameters
 num_episodes = 10000
