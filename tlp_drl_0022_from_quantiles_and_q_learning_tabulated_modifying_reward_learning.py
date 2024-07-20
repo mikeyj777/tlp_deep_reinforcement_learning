@@ -65,7 +65,7 @@ a = np.zeros(action_space_size)
 q_table = np.broadcast_to(a, (num_state_buckets,) * state_space_size + a.shape).copy()
 
 # tunable parameters
-num_episodes = 20000
+num_episodes = 10000
 max_steps_per_episode = 200
 
 learning_rate = 0.1

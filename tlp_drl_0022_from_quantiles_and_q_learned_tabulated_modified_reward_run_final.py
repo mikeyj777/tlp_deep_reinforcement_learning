@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import gymnasium as gym
 
 # stored q-table
-fil_name = 'data/cartpole_q_table_modified_reward_state_quantiles_10_episodes_20000.csv'
+fil_name = 'data/cartpole_q_table_modified_reward_state_quantiles_10_episodes_10000.csv'
 
 render_mode = 'human'
 

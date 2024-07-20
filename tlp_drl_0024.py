@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium import wrappers
 
+import pickle
 import os
 import sys
 import numpy as np
@@ -14,7 +15,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import SGDRegressor
 
-monitor = True
+monitor = False
+pickle_models_when_done = True
 
 class FeatureTransformer:
 
@@ -67,10 +69,19 @@ class Model:
         self.models[a].partial_fit(X, [G])
     
     def sample_action(self, s, eps):
+        # debug xxx apple
+        # don't need eps greedy as the reward for staying alive is negative, and table is initialized to zero
         if np.random.random() < eps:
             return self.env.action_space.sample()
         else:
             return np.argmax(self.predict(s))
+        # return np.argmax(self.predict(s))
+    
+    def pickle_the_models(self):
+        f_name = f'data/mountain_car_fit_model_{datetime.now():%Y_%m_%d_%H%M}.pickle'
+        with open(f_name, 'wb') as f:
+            pickle.dump(self.models, f, pickle.DEFAULT_PROTOCOL)
+
     
 
 def play_one(model, env, eps, gamma):
@@ -84,6 +95,15 @@ def play_one(model, env, eps, gamma):
         observation, reward, done, truncated, info = env.step(action)
         done = done or truncated
 
+        # debug xxx apple
+        # hotwiring reward to give more motivation to use a positive strategy.  
+        # not sure this is great.
+        # if reward == -1:
+        #     reward = -300
+
+        if iters % 100 == 0:
+            print(totalreward)
+        
         if done:
             G = reward
         else:
@@ -97,7 +117,7 @@ def play_one(model, env, eps, gamma):
     return totalreward
 
 def plot_cost_to_go(env, estimator, num_tiles = 20):
-    x = np.linspace(env.obervation_space.low[0], env.observation_space.high[0], num = num_tiles)
+    x = np.linspace(env.observation_space.low[0], env.observation_space.high[0], num = num_tiles)
     y = np.linspace(env.observation_space.low[1], env.observation_space.high[1], num = num_tiles)
     X, Y = np.meshgrid(x, y)
 
@@ -126,7 +146,7 @@ def plot_running_average(totalrewards):
 
 def main():
 
-    env = gym.make('MountainCar-v0')
+    env = gym.make('MountainCar-v0', render_mode = 'rgb_array').env
     ft = FeatureTransformer(env)
     model = Model(env, ft, 'constant')
     gamma = 0.99
@@ -145,6 +165,8 @@ def main():
         totalrewards[n] = totalreward
         if (n+1) % 10 == 0:
             print(f'episode {n}.  total reward:  {totalreward}')
+    if pickle_models_when_done:
+        model.pickle_the_models()
     print(f'average reward of last 100 episodes: {totalrewards[-100:].mean()}')
     print("total steps:", -totalrewards.sum()) # -1 reward for each step that doesn't result in "done"
 
