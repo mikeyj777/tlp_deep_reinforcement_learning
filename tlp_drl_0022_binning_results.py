@@ -4,7 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# eventually will characterize state space in terms of "Bins" of each of 4 observed variables 
+# to determine bin ranges, will start to collect data using random search.
+# try both attempts of using random search and random search with finding best fit.
+
+
 render_mode = None
+observations = []
 
 def get_action(s, w):
     # 0 - left; 1 - right
@@ -16,11 +22,13 @@ def get_action(s, w):
     return act
 
 def play_one_episode(env, params):
+    global observations
     observation = env.reset()[0]
     done = False
     t = 0
 
     while not done and t < 10000:
+        observations.append(observation)
         if render_mode is not None:
             env.render()
         t += 1
@@ -52,9 +60,9 @@ def random_search(env):
         avg_length = play_multiple_episodes(env, 100, new_params)
         episode_lengths.append(avg_length)
 
-        if avg_length > best:
-            params = new_params
-            best = avg_length
+        # if avg_length > best:
+        #     params = new_params
+        #     best = avg_length
     
     return episode_lengths, params
 
@@ -62,15 +70,19 @@ def random_search(env):
 env = gym.make('CartPole-v1', render_mode=render_mode)
 episode_lengths, params = random_search(env)
 
-np.savetxt('data/cartpole_weights.csv', params, delimiter=',')
+observations_df = pd.DataFrame(observations, columns = ['cart_position', 'cart_velocity', 'pole_angle', 'pole_angular_velocity'])
+observations_df.to_csv('data/cartpole_observations_from_random_params.csv')
+
+
+# np.savetxt('data/cartpole_weights.csv', params, delimiter=',')
 
 plt.plot(episode_lengths)
 plt.show()
 
-print('*** Final run with final weights***')
-render_mode = 'human'
-env = gym.make('CartPole-v1', render_mode=render_mode)
-env = TimeLimit(env, max_episode_steps=1000)
-final_len = play_one_episode(env, params)
-print(f'final len: {final_len}')
+# print('*** Final run with final weights***')
+# render_mode = 'human'
+# env = gym.make('CartPole-v1', render_mode=render_mode)
+# env = TimeLimit(env, max_episode_steps=1000)
+# final_len = play_one_episode(env, params)
+# print(f'final len: {final_len}')
 
