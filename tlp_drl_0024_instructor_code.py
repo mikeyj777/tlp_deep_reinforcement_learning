@@ -1,4 +1,5 @@
 import gymnasium as gym
+import pickle
 import os
 import sys
 import numpy as np
@@ -12,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import SGDRegressor
 
-monitor = True
+monitor = False
 
 # SGDRegressor defaults:
 # loss='squared_loss', penalty='l2', alpha=0.0001,
@@ -81,6 +82,11 @@ class Model:
       return self.env.action_space.sample()
     else:
       return np.argmax(self.predict(s))
+    
+  def pickle_the_models(self):
+    f_name = f'data/mountain_car_fit_model_{datetime.now():%Y_%m_%d_%H%M}.pickle'
+    with open(f_name, 'wb') as f:
+      pickle.dump(self.models, f, pickle.DEFAULT_PROTOCOL)
 
 
 # returns a list of states_and_rewards, and the total reward
@@ -166,6 +172,8 @@ def main(show_plots=True):
       print("episode:", n, "total reward:", totalreward)
   print("avg reward for last 100 episodes:", totalrewards[-100:].mean())
   print("total steps:", -totalrewards.sum())
+
+  model.pickle_the_models()
 
   if show_plots:
     plt.plot(totalrewards)

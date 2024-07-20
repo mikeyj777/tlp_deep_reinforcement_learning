@@ -15,7 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import SGDRegressor
 
-monitor = False
+monitor = True
 pickle_models_when_done = True
 
 class FeatureTransformer:
@@ -24,7 +24,6 @@ class FeatureTransformer:
         observation_examples = np.array([env.observation_space.sample() for x in range(10000)])
         scaler = StandardScaler()
         scaler.fit(observation_examples)
-        transformed = scaler.transform(observation_examples)
 
         # states to features
         featurizer = FeatureUnion([
@@ -33,7 +32,10 @@ class FeatureTransformer:
             ('rbf3', RBFSampler(gamma=1.0, n_components=n_components)),
             ('rbf4', RBFSampler(gamma=0.5, n_components=n_components))
         ])
-        example_features = featurizer.fit_transform(transformed)
+
+        # attempted to separate the following line into two steps, but I don't think it could 
+        # do the feature fit appropriately.
+        example_features = featurizer.fit_transform(scaler.transform(observation_examples))
 
         self.dimensions = example_features.shape[1]
         self.scaler = scaler
@@ -71,11 +73,11 @@ class Model:
     def sample_action(self, s, eps):
         # debug xxx apple
         # don't need eps greedy as the reward for staying alive is negative, and table is initialized to zero
-        if np.random.random() < eps:
-            return self.env.action_space.sample()
-        else:
-            return np.argmax(self.predict(s))
-        # return np.argmax(self.predict(s))
+        # if np.random.random() < eps:
+        #     return self.env.action_space.sample()
+        # else:
+        #     return np.argmax(self.predict(s))
+        return np.argmax(self.predict(s))
     
     def pickle_the_models(self):
         f_name = f'data/mountain_car_fit_model_{datetime.now():%Y_%m_%d_%H%M}.pickle'
@@ -158,7 +160,7 @@ def main():
     N = 300
     totalrewards = np.empty(N)
     for n in range(N):
-        eps = 0.1*(0.1**n)
+        eps = 1.0/(0.1*n+1)
         if n == 199:
             print(f'epsilon: {eps}')
         totalreward = play_one(model, env, eps, gamma)
@@ -177,5 +179,7 @@ def main():
     plot_running_average(totalrewards)
 
     plot_cost_to_go(env, model)
+
+    env.close()
 
 main()
