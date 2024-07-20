@@ -148,7 +148,7 @@ def main(show_plots=True):
 
   if monitor:
     filename = os.path.basename(__file__).split('.')[0]
-    monitor_dir = './' + filename + '_' + f'{datetime.now():%Y_%m_%d_%H%M}'
+    monitor_dir = 'data/' + filename + '_' + f'{datetime.now():%Y_%m_%d_%H%M}'
     env = wrappers.RecordVideo(env, monitor_dir)
 
 
