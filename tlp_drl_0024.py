@@ -18,7 +18,7 @@ monitor = True
 
 class FeatureTransformer:
 
-    def __init__(self, env):
+    def __init__(self, env, n_components=500):
         observation_examples = np.array([env.observation_space.sample() for x in range(10000)])
         scaler = StandardScaler()
         scaler.fit(observation_examples)
@@ -26,13 +26,14 @@ class FeatureTransformer:
 
         # states to features
         featurizer = FeatureUnion([
-            ('rbf1', RBFSampler(gamma=5.0, n_components = 500)),
-            ('rbf2', RBFSampler(gamma=2.0, n_components = 500)),
-            ('rbf3', RBFSampler(gamma=1.0, n_components = 500)),
-            ('rbf4', RBFSampler(gamma=0.5, n_components = 500))
+            ('rbf1', RBFSampler(gamma=5.0, n_components=n_components)),
+            ('rbf2', RBFSampler(gamma=2.0, n_components=n_components)),
+            ('rbf3', RBFSampler(gamma=1.0, n_components=n_components)),
+            ('rbf4', RBFSampler(gamma=0.5, n_components=n_components))
         ])
-        featurizer.fit(transformed)
+        example_features = featurizer.fit_transform(transformed)
 
+        self.dimensions = example_features.shape[1]
         self.scaler = scaler
         self.featurizer = featurizer
 
@@ -55,9 +56,9 @@ class Model:
     
     def predict(self, s):
         X = self.feature_transformer.transform([s])
-        assert(len(X.shape) == 2)
-        ans =  np.array([m.predict(X) for m in self.models])
-        return ans
+        result = np.stack([m.predict(X) for m in self.models]).T
+        assert(len(result.shape) == 2)        
+        return result
     
     def update(self, s, a, G):
         X = self.feature_transformer.transform([s])
@@ -82,14 +83,22 @@ def play_one(model, env, eps, gamma):
         prev_observation = observation
         observation, reward, done, truncated, info = env.step(action)
         done = done or truncated
-        G = reward + gamma * np.max(model.predict(observation)[0])
+
+        if done:
+            G = reward
+        else:
+            Q_next = model.predict(observation)
+            G = reward + gamma * np.max(Q_next[0])
+            
         model.update(prev_observation, action, G)
         totalreward += reward
         iters += 1
+    
+    return totalreward
 
 def plot_cost_to_go(env, estimator, num_tiles = 20):
     x = np.linspace(env.obervation_space.low[0], env.observation_space.high[0], num = num_tiles)
-    y = np.linspace(env.observation_space.low[1], env.observation_space[1], num = num_tiles)
+    y = np.linspace(env.observation_space.low[1], env.observation_space.high[1], num = num_tiles)
     X, Y = np.meshgrid(x, y)
 
     Z = np.apply_along_axis(lambda _: -np.max(estimator.predict(_)), 2, np.dstack([X, Y]))
@@ -115,30 +124,36 @@ def plot_running_average(totalrewards):
     plt.title('Running Average')
     plt.show()
 
-env = gym.make('MountainCar-v0')
-ft = FeatureTransformer(env)
-model = Model(env, ft, 'constant')
-gamma = 0.99
+def main():
 
-if monitor:
-    dir_name = f'data/mountain_car_q_learning_rbf_{datetime.now():%Y_%m_%d_%H%M}'
-    env = wrappers.RecordVideo(env, dir_name)
+    env = gym.make('MountainCar-v0')
+    ft = FeatureTransformer(env)
+    model = Model(env, ft, 'constant')
+    gamma = 0.99
 
-N = 300
-totalrewards = np.empty(N)
-for n in range(N):
-    eps = 0.1*(0.97**n)
-    totalreward = play_one(model, eps, gamma)
-    totalrewards[n] = totalreward
-    print(f'episode {n}.  total reward:  {totalreward}')
-print(f'average reward of last 100 episodes: {totalrewards[-100:].mean()}')
+    if monitor:
+        dir_name = f'data/mountain_car_q_learning_rbf_{datetime.now():%Y_%m_%d_%H%M}'
+        env = wrappers.RecordVideo(env, dir_name)
 
-plt.plot(totalrewards)
-plt.title('Rewards')
-plt.show()
+    N = 300
+    totalrewards = np.empty(N)
+    for n in range(N):
+        eps = 0.1*(0.1**n)
+        if n == 199:
+            print(f'epsilon: {eps}')
+        totalreward = play_one(model, env, eps, gamma)
+        totalrewards[n] = totalreward
+        if (n+1) % 10 == 0:
+            print(f'episode {n}.  total reward:  {totalreward}')
+    print(f'average reward of last 100 episodes: {totalrewards[-100:].mean()}')
+    print("total steps:", -totalrewards.sum()) # -1 reward for each step that doesn't result in "done"
 
-plot_running_average(totalrewards)
+    plt.plot(totalrewards)
+    plt.title('Rewards')
+    plt.show()
 
-plot_cost_to_go(env, model)
+    plot_running_average(totalrewards)
 
+    plot_cost_to_go(env, model)
 
+main()
