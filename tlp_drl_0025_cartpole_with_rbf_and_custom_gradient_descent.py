@@ -131,7 +131,7 @@ class Model:
     def pickle_the_models(self):
         f_name = f'data/mountain_car_fit_model_n_components_{self.feature_transformer.n_components}_{datetime.now():%Y_%m_%d_%H%M}.pickle'
         with open(f_name, 'wb') as f:
-            pickle.dump(self.models, f, pickle.DEFAULT_PROTOCOL)
+            pickle.dump(self, f, pickle.DEFAULT_PROTOCOL)
 
     
 
@@ -232,18 +232,6 @@ def main(n_components=500, show_plots = True):
 
 n = 500
 steps = main(n_components=n, show_plots=True)
-# steps_vs_components = []
-# while n <= 500:
-#     
-#     steps_vs_components.append([n, steps])
-#     print(steps_vs_components)
-#     n += 25
 
-# steps_vs_components_np = np.array(steps_vs_components)
-# x = steps_vs_components_np[:,0]
-# y = steps_vs_components_np[:,1]
-
-# plt.scatter(x, y)
-# plt.show()
 
 apple = 1
