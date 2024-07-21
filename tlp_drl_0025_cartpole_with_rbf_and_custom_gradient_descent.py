@@ -224,7 +224,7 @@ def main(n_components=500, show_plots = True):
 
         plot_running_average(totalrewards)
 
-        plot_cost_to_go(env, model)
+        # plot_cost_to_go(env, model)
 
     env.close()
 
