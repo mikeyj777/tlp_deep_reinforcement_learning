@@ -14,12 +14,21 @@ from datetime import datetime
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import StandardScaler
 from sklearn.kernel_approximation import RBFSampler
-from sklearn.linear_model import SGDRegressor
 
 monitor = True
 pickle_models_when_done = True
 
+class SGDRegressor:
+    def __init__(self, D, lr = 0.1):
+        self.w = np.random.randn(D) / np.sqrt(D)
+        self.lr = 0.1
+    
+    def partial_fit(self, X, Y):
+        self.w += self.lr * (Y - X.dot(self.w)).dot(X)
 
+    def predict(self, X):
+        return X.dot(self.w)
+    
 
 class FeatureTransformer:
 
@@ -94,10 +103,10 @@ class Model:
 
     def __init__(self, env, feature_transformer, learning_rate):
         self.env = env
-        self.models = []
+        self.models = []            
         self.feature_transformer = feature_transformer
         for i in range(env.action_space.n):
-            model = SGDRegressor(learning_rate=learning_rate)
+            model = SGDRegressor(D = feature_transformer.dimensions, lr=0.1)
             model.partial_fit(feature_transformer.transform( [env.reset()[0]]), [0])
             self.models.append(model)
     
@@ -131,7 +140,7 @@ def play_one(model, env, eps, gamma):
     done = False
     totalreward = 0
     iters = 0
-    while not done and iters < 1000:
+    while not done and iters < 2000:
         action = model.sample_action(observation, eps)
         prev_observation = observation
         observation, reward, done, truncated, info = env.step(action)
