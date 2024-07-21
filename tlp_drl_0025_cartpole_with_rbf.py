@@ -114,13 +114,10 @@ class Model:
         self.models[a].partial_fit(X, [G])
     
     def sample_action(self, s, eps):
-        # debug xxx apple
-        # don't need eps greedy as the reward for staying alive is negative, and table is initialized to zero
-        # if np.random.random() < eps:
-        #     return self.env.action_space.sample()
-        # else:
-        #     return np.argmax(self.predict(s))
-        return np.argmax(self.predict(s))
+        if np.random.random() < eps:
+            return self.env.action_space.sample()
+        else:
+            return np.argmax(self.predict(s))
     
     def pickle_the_models(self):
         f_name = f'data/mountain_car_fit_model_n_components_{self.feature_transformer.n_components}_{datetime.now():%Y_%m_%d_%H%M}.pickle'
@@ -134,17 +131,11 @@ def play_one(model, env, eps, gamma):
     done = False
     totalreward = 0
     iters = 0
-    while not done and iters < 10000:
+    while not done and iters < 400:
         action = model.sample_action(observation, eps)
         prev_observation = observation
         observation, reward, done, truncated, info = env.step(action)
         done = done or truncated
-
-        # debug xxx apple
-        # hotwiring reward to give more motivation to use a positive strategy.  
-        # not sure this is great.
-        # if reward == -1:
-        #     reward = -300
 
         if iters % 100 == 0:
             print(totalreward)
