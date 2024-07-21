@@ -71,7 +71,7 @@ env = gym.make('CartPole-v1', render_mode=render_mode)
 episode_lengths, params = random_search(env)
 
 observations_df = pd.DataFrame(observations, columns = ['cart_position', 'cart_velocity', 'pole_angle', 'pole_angular_velocity'])
-observations_df.to_csv('data/cartpole_observations_from_random_params.csv')
+observations_df.to_csv('data/cartpole_observations_from_random_params.csv', index=False)
 
 
 # np.savetxt('data/cartpole_weights.csv', params, delimiter=',')

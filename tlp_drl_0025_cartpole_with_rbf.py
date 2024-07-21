@@ -5,6 +5,7 @@ import pickle
 import os
 import sys
 import numpy as np
+import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -19,33 +20,73 @@ monitor = True
 pickle_models_when_done = True
 
 
+
 class FeatureTransformer:
 
     def __init__(self, env, n_components=500):
-        observation_examples = np.array([env.observation_space.sample() for x in range(10000)])
+        self.set_observations_and_quantiles()
+        observation_examples_df = self.observations_df.sample(n=10000)
+        observation_examples = observation_examples_df.values
+        observation_classifications = np.apply_along_axis(self.get_state_classifications, axis = 1, arr = observation_examples)
+        state_space_size = len(self.quantile_df)
+
         scaler = StandardScaler()
-        scaler.fit(observation_examples)
+        scaler.fit(observation_classifications)
         self.n_components = n_components
+        
+        rbfs = []
+        gamma = 5
+        for i in range(state_space_size):
+            rbfs.append((f'rbf{i+1}', RBFSampler(gamma=gamma, n_components=n_components)))
+            gamma /= 2
 
         # states to features
-        featurizer = FeatureUnion([
-            ('rbf1', RBFSampler(gamma=5.0, n_components=n_components)),
-            ('rbf2', RBFSampler(gamma=2.0, n_components=n_components)),
-            ('rbf3', RBFSampler(gamma=1.0, n_components=n_components)),
-            ('rbf4', RBFSampler(gamma=0.5, n_components=n_components))
-        ])
+        featurizer = FeatureUnion(rbfs)
 
-        # attempted to separate the following line into two steps, but I don't think it could 
-        # do the feature fit appropriately.
-        example_features = featurizer.fit_transform(scaler.transform(observation_examples))
+        example_features = featurizer.fit_transform(scaler.transform(observation_classifications))
 
         self.dimensions = example_features.shape[1]
         self.scaler = scaler
         self.featurizer = featurizer
 
-    def transform(self, observations):
+    def set_observations_and_quantiles(self):
+    # stored game observations
+        observations_df = pd.read_csv('data/cartpole_observations_from_random_params.csv')
+        num_state_buckets = 10
+        n = num_state_buckets
+        quantile_fractions = np.linspace(0, 1, n+1, endpoint=True)
 
-        scaled = self.scaler.transform(observations)
+        quantile_list = []
+        for q in quantile_fractions:
+            quantile = observations_df.quantile(q)
+            quantile = quantile.to_dict()
+            quantile_list.append(quantile)
+        quantile_df = pd.DataFrame(quantile_list)
+        quantile_df['quantile_fractions'] = quantile_fractions
+        self.quantile_df = quantile_df
+        self.observations_df = observations_df
+
+    def get_state_classifications(self, state):
+        out_state = []
+        observation_classes = self.quantile_df.columns
+        for obs, state_obs in zip(observation_classes, state):
+            quantiles_np = self.quantile_df[obs].values
+            s_class = 0
+            for q in quantiles_np:
+                if state_obs <= q:
+                    break
+                if s_class < quantiles_np.shape[0]:
+                    s_class += 1
+            out_state.append(s_class)
+    
+        return out_state
+
+    def transform(self, observations):
+        obs_classified = []
+        for obs in observations:
+            one_obs_classified = self.get_state_classifications(obs)
+            obs_classified.append(one_obs_classified)
+        scaled = self.scaler.transform(obs_classified)
         ans = self.featurizer.transform(scaled)
         return ans
 
@@ -109,6 +150,7 @@ def play_one(model, env, eps, gamma):
             print(totalreward)
         
         if done:
+            reward = -300
             G = reward
         else:
             Q_next = model.predict(observation)
@@ -150,7 +192,7 @@ def plot_running_average(totalrewards):
 
 def main(n_components=500, show_plots = True):
 
-    env = gym.make('MountainCar-v0', render_mode = 'rgb_array').env
+    env = gym.make('CartPole-v1', render_mode = 'rgb_array').env
     ft = FeatureTransformer(env, n_components=n_components)
     model = Model(env, ft, 'constant')
     gamma = 0.99
@@ -188,19 +230,20 @@ def main(n_components=500, show_plots = True):
 
     return total_steps
 
-n = 25
-steps_vs_components = []
-while n <= 500:
-    steps = main(n_components=n, show_plots=False)
-    steps_vs_components.append([n, steps])
-    print(steps_vs_components)
-    n += 25
+n = 500
+steps = main(n_components=n, show_plots=True)
+# steps_vs_components = []
+# while n <= 500:
+#     
+#     steps_vs_components.append([n, steps])
+#     print(steps_vs_components)
+#     n += 25
 
-steps_vs_components_np = np.array(steps_vs_components)
-x = steps_vs_components_np[:,0]
-y = steps_vs_components_np[:,1]
+# steps_vs_components_np = np.array(steps_vs_components)
+# x = steps_vs_components_np[:,0]
+# y = steps_vs_components_np[:,1]
 
-plt.scatter(x, y)
-plt.show()
+# plt.scatter(x, y)
+# plt.show()
 
 apple = 1

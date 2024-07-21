@@ -95,7 +95,7 @@ def play_one(model, env, eps, gamma):
   done = False
   totalreward = 0
   iters = 0
-  while not done and iters < 10000:
+  while not done and iters < 400:
     action = model.sample_action(observation, eps)
     prev_observation = observation
     observation, reward, done, truncated, info = env.step(action)
