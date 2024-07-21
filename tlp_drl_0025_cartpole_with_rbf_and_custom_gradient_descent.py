@@ -101,10 +101,14 @@ class FeatureTransformer:
 
 class Model:
 
-    def __init__(self, env, feature_transformer, learning_rate):
+    def __init__(self, env, feature_transformer, learning_rate = 0.1, models = None):
         self.env = env
         self.models = []            
         self.feature_transformer = feature_transformer
+        if models is not None:
+            self.models = models
+            return
+        
         for i in range(env.action_space.n):
             model = SGDRegressor(D = feature_transformer.dimensions, lr=0.1)
             model.partial_fit(feature_transformer.transform( [env.reset()[0]]), [0])
@@ -131,7 +135,7 @@ class Model:
     def pickle_the_models(self):
         f_name = f'data/mountain_car_fit_model_n_components_{self.feature_transformer.n_components}_{datetime.now():%Y_%m_%d_%H%M}.pickle'
         with open(f_name, 'wb') as f:
-            pickle.dump(self, f, pickle.DEFAULT_PROTOCOL)
+            pickle.dump(self.models, f, pickle.DEFAULT_PROTOCOL)
 
     
 
@@ -211,12 +215,6 @@ def main(n_components=500, show_plots = True):
         totalrewards[n] = totalreward
         if (n+1) % 10 == 0:
             print(f'n_components: {n_components}.  episode {n}.  total reward:  {totalreward}')
-    if pickle_models_when_done:
-        model.pickle_the_models()
-    print(f'n_components: {n_components}.  average reward of last 100 episodes: {totalrewards[-100:].mean()}')
-    total_steps = -totalrewards.sum()
-    print(f'n_components: {n_components}.  total steps: {total_steps}') # -1 reward for each step that doesn't result in "done"
-
     if show_plots:
         plt.plot(totalrewards)
         plt.title('Rewards')
@@ -224,14 +222,18 @@ def main(n_components=500, show_plots = True):
 
         plot_running_average(totalrewards)
 
-        # plot_cost_to_go(env, model)
+    if pickle_models_when_done:
+        model.pickle_the_models()
+    print(f'n_components: {n_components}.  average reward of last 100 episodes: {totalrewards[-100:].mean()}')
+    total_steps = -totalrewards.sum()
+    print(f'n_components: {n_components}.  total steps: {total_steps}') # -1 reward for each step that doesn't result in "done"
 
     env.close()
 
     return total_steps
 
 n = 500
-steps = main(n_components=n, show_plots=True)
+# steps = main(n_components=n, show_plots=True)
 
 
 apple = 1
