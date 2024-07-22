@@ -50,9 +50,14 @@ def play_one(model, env, eps, gamma, n=5):
             return_up_to_prediction = multiplier.dot(rewards[-n:])
             G = return_up_to_prediction + (gamma**n)*np.max(model.predict(observation))
             model.update(states[-n], actions[-n], G)
-        
+
+            if iters % 100 == 0:
+                print(f'iters: {iters} | G: {G}')
+
         totalreward += reward
         iters += 1
+
+
     
     if n == 1:
         rewards = []
@@ -103,4 +108,20 @@ def main():
     print(f'avg reward for last 100 eps:  {totalrewards[-100].mean()}')
     print(f'total step: {-totalrewards.sum()}')
 
+    plt.plot(totalrewards)
+    plt.title("Rewards")
+    plt.show()
+
+    plot_running_average(totalrewards)
+
+    # plot the optimal state-value function
+    plot_cost_to_go(env, model)
+
+    try:
+        model.pickle_the_models()
+    except Exception as e:
+        print(f'cant pickle the models.  error msg: {e}')
+
 main()
+
+apple = 1
