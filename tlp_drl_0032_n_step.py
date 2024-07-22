@@ -48,7 +48,7 @@ def play_one(model, env, eps, gamma, n=5):
 
         if len(rewards) >= n:
             return_up_to_prediction = multiplier.dot(rewards[-n:])
-            G = return_up_to_prediction + (gamma**n)*np.max(model.predict(observation)[0])
+            G = return_up_to_prediction + (gamma**n)*np.max(model.predict(observation))
             model.update(states[-n], actions[-n], G)
         
         totalreward += reward
@@ -83,7 +83,7 @@ def play_one(model, env, eps, gamma, n=5):
     return totalreward
 
 def main():
-    env = gym.make('MountainCar-v0').env
+    env = gym.make('MountainCar-v0', render_mode = 'rgb_array').env
     ft = FeatureTransformer(env)
     model = Model(env, ft, 'constant')
     gamma = 0.99
@@ -97,9 +97,10 @@ def main():
     costs = np.empty(N)
     for n in range(N):
         eps = 0.1*(0.97**n)
-        totalreward = play_one(model, eps, gamma)
+        totalreward = play_one(model=model, env=env, eps=eps, gamma=gamma)
         totalrewards[n] = totalreward
         print(f'episode: {n} | total reward: {totalreward}')
     print(f'avg reward for last 100 eps:  {totalrewards[-100].mean()}')
     print(f'total step: {-totalrewards.sum()}')
-    
+
+main()

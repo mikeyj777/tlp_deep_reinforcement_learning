@@ -32,15 +32,28 @@ class SGDRegressor:
 
 class FeatureTransformer:
 
-    def __init__(self, env, n_components=500):
-        self.set_observations_and_quantiles()
-        observation_examples_df = self.observations_df.sample(n=10000)
-        observation_examples = observation_examples_df.values
-        observation_classifications = np.apply_along_axis(self.get_state_classifications, axis = 1, arr = observation_examples)
-        state_space_size = len(self.quantile_df)
+    def __init__(self, env, n_components=500, sample_env = True, quantize_data = False):
+        if sample_env:
+            observation_examples = np.array([env.observation_space.sample() for x in range(10000)])
+            quantize_data = True
+            if hasattr(env.observation_space, 'n'):
+                state_space_size = env.observation_space.n
+                quantize_data = False
+            else:
+                if hasattr(env.observation_space, 'shape'):
+                    state_space_size = env.observation_space.shape[0]
+                    quantize_data = False
 
+        if quantize_data:
+            self.set_observations_and_quantiles()
+            observation_examples_df = self.observations_df.sample(n=10000)
+            observation_examples = observation_examples_df.values
+            observation_examples = np.apply_along_axis(self.get_state_classifications, axis = 1, arr = observation_examples)
+            state_space_size = len(self.quantile_df)
+
+        self.quantize_data = quantize_data
         scaler = StandardScaler()
-        scaler.fit(observation_classifications)
+        scaler.fit(observation_examples)
         self.n_components = n_components
         
         rbfs = []
@@ -52,7 +65,7 @@ class FeatureTransformer:
         # states to features
         featurizer = FeatureUnion(rbfs)
 
-        example_features = featurizer.fit_transform(scaler.transform(observation_classifications))
+        example_features = featurizer.fit_transform(scaler.transform(observation_examples))
 
         self.dimensions = example_features.shape[1]
         self.scaler = scaler
@@ -91,11 +104,13 @@ class FeatureTransformer:
         return out_state
 
     def transform(self, observations):
-        obs_classified = []
-        for obs in observations:
-            one_obs_classified = self.get_state_classifications(obs)
-            obs_classified.append(one_obs_classified)
-        scaled = self.scaler.transform(obs_classified)
+        if self.quantize_data:
+            obs_classified = []
+            for obs in observations:
+                one_obs_classified = self.get_state_classifications(obs)
+                obs_classified.append(one_obs_classified)
+            observations = obs_classified
+        scaled = self.scaler.transform(observations)
         ans = self.featurizer.transform(scaled)
         return ans
 
@@ -115,6 +130,7 @@ class Model:
             self.models.append(model)
     
     def predict(self, s):
+        
         X = self.feature_transformer.transform([s])
         result = np.stack([m.predict(X) for m in self.models]).T
         assert(len(result.shape) == 2)        
