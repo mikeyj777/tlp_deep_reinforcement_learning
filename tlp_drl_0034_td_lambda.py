@@ -22,11 +22,10 @@ class BaseModel: # similar to SGDRegressor, but utilizes "eligibility vector"
         return X.dot(self.w)
 
 class Model:
-    def __init__(self, env, feature_transformer):
+    def __init__(self, env = None, feature_transformer = None):
         self.env = env
         self.models = []
         self.feature_transformer = feature_transformer
-
         D = feature_transformer.dimensions
         self.eligibilities = np.zeros((env.action_space.n, D))
         for i in range(env.action_space.n):
@@ -35,7 +34,7 @@ class Model:
         
     def predict(self, s):
         X = self.feature_transformer.transform([s])
-        return np.array([m.predict(X) for m in self.models])
+        return np.array([m.predict(X)[0] for m in self.models])
     
     def update(self, s, a, G, gamma, lambda_):
         X = self.feature_transformer.transform([s])
@@ -114,6 +113,6 @@ def main():
     except Exception as e:
         print(f'error: {e}')
 
-main()
+# main()
 
-apple = 1
+# apple = 1
